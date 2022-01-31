@@ -2,7 +2,7 @@ let colorBlock = [];
 let colorSelected;
 
 function setup() {
-  createCanvas(1000, 500);
+  createCanvas(windowWidth, windowHeight);
   colorBlock[0] = color(255, 0, 0); //red
   colorBlock[1] = color(255, 165, 0); //orange
   colorBlock[2] = color(255, 255, 0); //yellow
