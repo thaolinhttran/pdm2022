@@ -1,10 +1,11 @@
-//Video link: https://www.youtube.com/watch?v=w4n8EEFzIV0
 const sounds = new Tone.Players({
   calm: "media/calm-ambient-7540.mp3",
   eastern: "media/eastern-morning-13407.mp3", 
   gates: "media/gates-of-heaven-music-6705.mp3",
   loop: "media/loop-black-box-exciting-bass-loop-130bpm-13888.mp3"
 })
+
+//Video link: https://www.youtube.com/watch?v=w4n8EEFzIV0
 
 let soundsInOrder = ['calm', 'eastern', 'gates', 'loop'];
 let nextSoundPlayed = 0;
