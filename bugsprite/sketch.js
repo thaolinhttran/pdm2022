@@ -4,7 +4,60 @@ let count = 20;
 let startTime;
 let gameState = 'wait';
 let score = 0;
+const homeSound = new Tone.Player("/media/FastFeelBananaPeel-320bit.mp3");
+//Tone.start() must be in console terminal to hear at the wait screen
+const laugh = new Tone.Player("/media/zapsplat_animals_mice_baby_whining_short_high_pitched_designed_001_80839.mp3");
+const vol = new Tone.Volume(-30).toDestination();
+homeSound.connect(vol);
+laugh.connect(vol);
+let gain = new Tone.Gain().connect(vol);
+let mosquito = new Tone.Synth({
+  oscillator: {
+    type: "fatsine4",
+    spread: 80,
+    count: 10,
+    frequency: 10000
+  },
+  envelope: {
+    attack: 0.7,
+    decay: 0.01,
+    sustain: 1,
+    attackCurve: "sine",
+    releaseCurve: "sine",
+    release: 0.2,
+    volume: -2000,
+  }
+});
+mosquito.connect(gain);
+let mosDis = new Tone.Distortion({
+  distortion: 5.3,
+  wet: 0.5
+});
+mosquito.connect(mosDis);
+mosquito.connect(gain);
 
+let tempo = 120;
+const loopMos = new Tone.Loop(time => {
+  mosquito.triggerAttackRelease("F4", "16n", time);
+}, "16n").start(0);
+Tone.Transport.bpm.value = tempo;
+
+let slap = new Tone.NoiseSynth({
+  noise: {
+    type: "white",
+    playbackRate: 5
+  },
+  envelope: {
+    attack: 0.1,
+    decay: 0.01,
+    release: 0.3
+  }
+});
+let slapE = new Tone.JCReverb({
+  roomSize: 0.2,
+  wet: 0.9
+});
+slap.connect(slapE).toDestination();
 function preload(){
   mosquitoSheet = loadImage("mosquitosprite.png");
   font = loadFont('SevenSidedGames.ttf');
@@ -36,8 +89,17 @@ function mousePressed(){
     }
   }
 
+  const now = Tone.now();
   if(bugID != -1) {
     bug[bugID].grab();
+    slap.triggerAttackRelease("C4", now);
+  }
+  else
+  {
+    if(mouseReleased)
+    {
+      laugh.start(now);
+    }
   }
 }
 
@@ -47,24 +109,29 @@ function mouseReleased(){
     bug.push(new Bug(mosquitoSheet, random(30, 570), random(30, 570), bug[i].speed + random(2, 4), random([-1, 1])));
   }
 }
-
+Tone.start();
 function draw() {
   background(205, 230, 242);
   let totalTime = 30;
   if(gameState == 'wait'){
+    homeSound.autostart=true;
     textSize(40);
     text('KILL THE MOSQUITOES', 150, 300);
     textSize(15);
     text('Press any key to start', 250, 350);
     if(mouseIsPressed){
+      //mosquito.triggerAttackRelease("A4", "8n");
       startTime = millis();
       gameState = 'playing';
     }
   }
   else if(gameState == 'playing'){
+    homeSound.stop();
     for(i = 0; i < count; i++){
       bug[i].draw();
-    } 
+    }
+    Tone.start();
+    Tone.Transport.start();
     let time = timer();
     textSize(20);
     text("Time: " + (totalTime - time), 10, 30);
@@ -86,9 +153,9 @@ function draw() {
       gameState = 'playing';
       score = 0;
     }
+    Tone.Transport.stop(0);
   }
 }
-
 class Bug{
   constructor(spriteSheet, x, y, speed, move){
     this.spriteSheet = spriteSheet;
@@ -185,6 +252,9 @@ class Bug{
       this.dead = true;
       if(this.dead){
         score++;
+        tempo = tempo + (score * 5);
+        //increase bpm if everytime a mosquito is dead
+        Tone.Transport.bpm.rampTo(tempo, 3);
       }
       this.x = -100;
       this.y = 0;
