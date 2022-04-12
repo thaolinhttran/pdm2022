@@ -1,3 +1,5 @@
+//https://youtu.be/eVvXcMuIxjs
+//https://thaolinhttran.github.io/pdm2022/serial-com/In-class-Serial-P5/
 let serialPDM;
 let portName = "COM3";
 
