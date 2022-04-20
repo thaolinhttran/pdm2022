@@ -1,3 +1,12 @@
+//Arduino controller implementation: Control gameplay using joystick instead of a mouse.
+//When a bug is squished, it transmits signals to the arduino buzzer and make noise.
+//Youtube: https://youtu.be/N1rOeP2G01U
+let serialPDM;
+let portName = "COM3";
+let xMouse = 0, yMouse = 0;
+
+let sensor;
+
 let bug = [];
 let font;
 let count = 20;
@@ -63,6 +72,9 @@ function preload(){
   font = loadFont('SevenSidedGames.ttf');
 }
 function setup() {
+  serialPDM = new PDMSerial(portName);
+  sensor = serialPDM.sensorData;
+
   createCanvas(600, 600);
   imageMode(CENTER);
   textFont(font);
@@ -75,7 +87,7 @@ function timer(){
   return int((millis() - startTime) / 1000);
 }
 
-function mousePressed(){
+function joyPressed(){
   let dmin = -1;
   let bugID = -1;
 
@@ -89,29 +101,40 @@ function mousePressed(){
     }
   }
 
-  const now = Tone.now();
   if(bugID != -1) {
     bug[bugID].grab();
-    slap.triggerAttackRelease("C4", now);
+    serialPDM.transmit('state', 1);
+    console.log('state');
+    //slap.triggerAttack("16n", Tone.now());
   }
-  else
+  else if(bugID == -1)
   {
-    if(mouseReleased)
-    {
+      const now = Tone.now();
       laugh.start(now);
-    }
   }
 }
 
-function mouseReleased(){
+function joyReleased(){
   for(i = 0; i < count; i++){
     bug[i].drop();
     bug.push(new Bug(mosquitoSheet, random(30, 570), random(30, 570), bug[i].speed + random(2, 4), random([-1, 1])));
   }
 }
+
 Tone.start();
 function draw() {
   background(205, 230, 242);
+
+  if(sensor.x != undefined || sensor.y != undefined){
+    xMouse+=sensor.x;
+    yMouse-=sensor.y;
+  }
+  console.log(sensor.x + "," + sensor.y);
+  push();
+  fill('black');
+  ellipse(xMouse, yMouse, 30);
+  pop();
+
   let totalTime = 30;
   if(gameState == 'wait'){
     homeSound.autostart=true;
@@ -119,7 +142,7 @@ function draw() {
     text('KILL THE MOSQUITOES', 150, 300);
     textSize(15);
     text('Press any key to start', 250, 350);
-    if(mouseIsPressed){
+    if(sensor.z == 1){
       //mosquito.triggerAttackRelease("A4", "8n");
       startTime = millis();
       gameState = 'playing';
@@ -127,6 +150,12 @@ function draw() {
   }
   else if(gameState == 'playing'){
     homeSound.stop();
+    if(sensor.z == 1){
+      joyPressed();
+    }
+    else if(sensor.z == 0){
+      joyReleased();
+    }
     for(i = 0; i < count; i++){
       bug[i].draw();
     }
@@ -148,7 +177,7 @@ function draw() {
     text("mosquitoes!", 325, 333);
     textSize(20);
     text("Press any key to restart", 220, 400);
-    if(mouseIsPressed){
+    if(sensor.z == 1){
       startTime = millis();
       gameState = 'playing';
       score = 0;
@@ -225,9 +254,9 @@ class Bug{
 
   grabCheck(){
     let d = -1;
-    if(mouseX > this.x - 30 && mouseX < this.x + 30 &&
-      mouseY > this.y - 30 && mouseY < this.y + 30){
-        d = dist(mouseX, mouseY, this.x, this.y);
+    if(xMouse > this.x - 40 && xMouse < this.x + 40 &&
+      xMouse > this.y - 40 && yMouse < this.y + 40){
+        d = dist(xMouse, yMouse, this.x, this.y);
     }
     return d;
   }
@@ -235,14 +264,14 @@ class Bug{
   grab(){
         this.stop();
         this.grabbed = true;
-        this.offsetX = this.x - mouseX;
-        this.offsetY = this.y - mouseY;
+        this.offsetX = this.x - xMouse;
+        this.offsetY = this.y - xMouse;
   }
 
   drag(){
     if(this.grabbed){
-      this.x = mouseX + this.offsetX;
-      this.y = mouseY + this.offsetY;
+      this.x = xMouse + this.offsetX;
+      this.y = xMouse + this.offsetY;
     }
   }
 
